@@ -248,3 +248,157 @@ function reorderAll(idx) {
     );
   }
 }
+
+/**
+ * Open returns page for chatbot
+ */
+function openReturnsPage() {
+  const modal = document.getElementById("product-modal");
+  if (!modal) return;
+
+  // Show orders with return status information
+  if (ORDERS.length === 0) {
+    modal.innerHTML = `
+      <div class="content" style="max-width:600px">
+        <div class="header">
+          <h2>🔄 Retouren</h2>
+          <button class="close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="body" style="display:block;padding:48px;text-align:center">
+          <div style="font-size:64px;margin-bottom:16px">📭</div>
+          <h3>Geen bestellingen beschikbaar</h3>
+          <p style="color:var(--muted);margin-bottom:24px">Je hebt geen bestellingen om te retourneren</p>
+          <div style="background:#fff8e1;padding:16px;border-radius:8px;margin-bottom:24px;font-size:14px">
+            📮 <strong>Retouradres:</strong><br>
+            Netherlands Warehouse<br>
+            Stapelstraat 50<br>
+            2132 PN Hoofddorp<br>
+            <br>
+            <em>Gratis retouren binnen 30 dagen</em>
+          </div>
+          <button class="btn primary" onclick="closeModal()" style="padding:12px 24px">
+            Terug
+          </button>
+        </div>
+      </div>
+    `;
+    modal.classList.remove("hidden");
+    return;
+  }
+
+  const sortedOrders = [...ORDERS].sort((a, b) => b.id - a.id);
+
+  modal.innerHTML = `
+    <div class="content" style="max-width:900px">
+      <div class="header">
+        <h2>🔄 Retouren (${ORDERS.length} bestellingen)</h2>
+        <button class="close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="body" style="display:block;max-height:600px;overflow-y:auto">
+        <div style="background:#fff8e1;padding:16px;border-radius:8px;margin-bottom:20px;font-size:14px">
+          📮 <strong>Retouradres:</strong><br>
+          Netherlands Warehouse<br>
+          Stapelstraat 50<br>
+          2132 PN Hoofddorp, Netherlands<br>
+          <br>
+          <strong>Let op:</strong> Je hebt 30 dagen om producten terug te sturen vanaf ontvangst
+        </div>
+        ${sortedOrders
+          .map(
+            (order) => `
+          <div class="order-card" style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px">
+              <div>
+                <h3 style="margin:0 0 8px">Bestelling #${order.id}</h3>
+                <div style="display:flex;gap:16px;color:var(--muted);font-size:14px">
+                  <span>📅 ${order.date}</span>
+                  <span>💰 €${order.total}</span>
+                </div>
+              </div>
+              <button class="btn small" onclick="initiateReturn(${
+                order.id
+              })" style="padding:8px 16px;font-size:12px">
+                Retour aanvragen
+              </button>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:12px">
+              ${order.items
+                .map(
+                  (item) => `
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px">
+                  <span>${item.name}</span>
+                  <span style="color:var(--muted)">x${item.quantity}</span>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+  modal.classList.remove("hidden");
+}
+
+/**
+ * Initiate return for specific order
+ */
+function initiateReturn(orderId) {
+  const order = ORDERS.find((o) => o.id === orderId);
+  if (!order) return;
+
+  const modal = document.getElementById("product-modal");
+  modal.innerHTML = `
+    <div class="content" style="max-width:600px">
+      <div class="header">
+        <h2>🔄 Retour Aanvragen</h2>
+        <button class="close" onclick="openReturnsPage()">←</button>
+      </div>
+      <div class="body" style="display:block;padding:24px">
+        <h3>Bestelling #${order.id}</h3>
+        <p style="color:var(--muted);margin-bottom:20px">Selecteer producten om terug te sturen:</p>
+        
+        ${order.items
+          .map(
+            (item, idx) => `
+          <label style="display:flex;align-items:center;padding:12px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;cursor:pointer">
+            <input type="checkbox" value="${idx}" style="margin-right:12px" />
+            <span>${item.name}</span>
+            <span style="margin-left:auto;color:var(--muted)">€${(
+              item.price * 1.21
+            ).toFixed(2)}</span>
+          </label>
+        `
+          )
+          .join("")}
+        
+        <div style="background:#e8f5e9;padding:16px;border-radius:8px;margin-top:20px;font-size:13px">
+          ✅ <strong>Kosteloos retourneren</strong><br>
+          Verstuur naar het retouradres hierboven
+        </div>
+        
+        <button class="btn primary" onclick="confirmReturn(${orderId})" style="width:100%;padding:12px;margin-top:20px">
+          Retour Bevestigen
+        </button>
+        <button class="btn" onclick="openReturnsPage()" style="width:100%;padding:12px;margin-top:8px">
+          Annuleren
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Confirm return
+ */
+function confirmReturn(orderId) {
+  showToast(
+    "Retour Aanvraag",
+    "✅ Je retourvraag is ontvangen! We nemen contact met je op.",
+    "success"
+  );
+  closeModal();
+}

@@ -70,14 +70,15 @@ function wire() {
 }
 
 function wireCartWishlist() {
+  document.getElementById("cart-btn")?.addEventListener("click", openCart);
   document
-    .querySelector(".actions .act:nth-child(3)")
-    ?.addEventListener("click", openCart);
-  document
-    .querySelector(".actions .act:nth-child(1)")
+    .getElementById("wishlist-btn")
     ?.addEventListener("click", openWishlist);
   document
-    .querySelector(".actions .act:nth-child(2)")
+    .getElementById("compare-btn")
+    ?.addEventListener("click", openCompare);
+  document
+    .getElementById("profile-btn")
     ?.addEventListener("click", openProfile);
   const modal = document.getElementById("product-modal");
   modal?.addEventListener("click", (e) => {

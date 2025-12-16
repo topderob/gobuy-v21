@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoBuy - Offline</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+      .offline-container {
+        text-align: center;
+        padding: 40px;
+        max-width: 500px;
+      }
+      .offline-icon {
+        font-size: 120px;
+        margin-bottom: 20px;
+        animation: float 3s ease-in-out infinite;
+      }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-20px);
+        }
+      }
+      h1 {
+        font-size: 36px;
+        margin-bottom: 16px;
+        font-weight: 700;
+      }
+      p {
+        font-size: 18px;
+        line-height: 1.6;
+        opacity: 0.9;
+        margin-bottom: 32px;
+      }
+      .retry-btn {
+        background: white;
+        color: #667eea;
+        border: none;
+        padding: 14px 32px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .retry-btn:hover {
+        transform: scale(1.05);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="offline-container">
+      <div class="offline-icon">📡</div>
+      <h1>Je bent offline</h1>
+      <p>
+        Geen internetverbinding gevonden. Controleer je netwerk en probeer het
+        opnieuw.
+      </p>
+      <button class="retry-btn" onclick="window.location.reload()">
+        Opnieuw proberen
+      </button>
+    </div>
+  </body>
+</html>

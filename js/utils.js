@@ -23,6 +23,9 @@ function showToast(title, message, type = "success") {
   `;
 
   toastContainer.appendChild(toastEl);
+  try {
+    toastContainer.classList.add("visible");
+  } catch (_) {}
 
   // Animate cart button pulse if it's a cart action
   if (type === "success" && title.includes("Winkelwagen")) {
@@ -39,14 +42,20 @@ function showToast(title, message, type = "success") {
     setTimeout(() => {
       if (toastEl.parentNode) {
         toastEl.remove();
+        // Hide container when empty to support CSS that toggles visibility
+        if (toastContainer && toastContainer.children.length === 0) {
+          try {
+            toastContainer.classList.remove("visible");
+          } catch (_) {}
+        }
       }
     }, 300);
   }, 3000);
 }
 
 function updateBadges() {
-  const cartBadge = document.querySelector(".actions .act:nth-child(3) .badge");
-  const wishBadge = document.querySelector(".actions .act:nth-child(1) .badge");
+  const cartBadge = document.querySelector("#cart-btn .badge");
+  const wishBadge = document.querySelector("#wishlist-btn .badge");
   const totalQty = CART.reduce((sum, item) => sum + (item.quantity || 1), 0);
   if (cartBadge) cartBadge.textContent = totalQty;
   if (wishBadge) wishBadge.textContent = WISHLIST.length;

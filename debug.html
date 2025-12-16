@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chatbot Debug</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .section {
+        background: white;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      .ok {
+        color: green;
+        font-weight: bold;
+      }
+      .error {
+        color: red;
+        font-weight: bold;
+      }
+      pre {
+        background: #eee;
+        padding: 10px;
+        border-radius: 3px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🤖 Chatbot Module Debug</h1>
+
+    <div class="section">
+      <h2>Product Import (CSV/JSON)</h2>
+      <p>
+        Voeg snel producten toe voor tests of dropshipping-proeven. Deze worden
+        opgeslagen in localStorage en verschijnen in de app.
+      </p>
+      <div
+        style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center"
+      >
+        <label>
+          <strong>CSV import:</strong>
+          <input id="file-csv" type="file" accept=".csv" />
+        </label>
+        <label>
+          <strong>JSON import:</strong>
+          <input id="file-json" type="file" accept=".json,application/json" />
+        </label>
+        <button id="btn-export">Export huidige ALL → JSON</button>
+        <button id="btn-clear">Wis geïmporteerde producten</button>
+      </div>
+      <details style="margin-top: 10px">
+        <summary>CSV kolommen (minimaal)</summary>
+        <pre>
+name,price,image,type,vendorSku,stock,seller,shipFrom,freeShip,local,discount</pre
+        >
+      </details>
+      <pre id="import-log" style="margin-top: 10px; max-height: 180px"></pre>
+    </div>
+
+    <div class="section">
+      <h2>Script Loading Order</h2>
+      <pre id="script-order"></pre>
+    </div>
+
+    <div class="section">
+      <h2>Module Availability</h2>
+      <div id="modules"></div>
+    </div>
+
+    <div class="section">
+      <h2>Console Logs</h2>
+      <pre id="console-logs"></pre>
+    </div>
+
+    <!-- Load all scripts in order -->
+    <script src="js/products-utils.js"></script>
+    <script src="js/products-electronics.js"></script>
+    <script src="js/products-kitchen.js"></script>
+    <script src="js/products-sports.js"></script>
+    <script src="js/products-home.js"></script>
+    <script src="js/products-fashion.js"></script>
+    <script src="js/products-toys.js"></script>
+    <script src="js/products-beauty.js"></script>
+    <script src="js/products-garden.js"></script>
+    <script src="js/products-automotive.js"></script>
+    <script src="js/products-baby.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/state.js"></script>
+
+    <script src="js/chatbot-faq.js"></script>
+    <script src="js/chatbot-logic.js"></script>
+    <script src="js/chatbot-ui.js"></script>
+    <script src="js/chatbot.js"></script>
+
+    <script>
+      // Capture console logs
+      const logs = [];
+      const originalLog = console.log;
+      const originalError = console.error;
+
+      console.log = function (...args) {
+        logs.push("LOG: " + args.join(" "));
+        originalLog.apply(console, args);
+      };
+
+      console.error = function (...args) {
+        logs.push("ERROR: " + args.join(" "));
+        originalError.apply(console, args);
+      };
+
+      // Check modules
+      setTimeout(() => {
+        document.getElementById("script-order").textContent = `
+chatbot-faq.js loaded
+chatbot-logic.js loaded
+chatbot-ui.js loaded
+chatbot.js loaded
+      `.trim();
+
+        const modulesDiv = document.getElementById("modules");
+        const checks = [
+          { name: "window.chatbotFAQ", obj: window.chatbotFAQ },
+          { name: "window.chatbotLogic", obj: window.chatbotLogic },
+          { name: "window.chatbotUI", obj: window.chatbotUI },
+          { name: "window.ALL", obj: window.ALL },
+        ];
+
+        let html = "";
+        checks.forEach((check) => {
+          const status = check.obj
+            ? "<span class='ok'>✓</span>"
+            : "<span class='error'>✗</span>";
+          html += `<div>${status} ${check.name}</div>`;
+          if (check.obj) {
+            const methods = Object.keys(check.obj);
+            html += `<div style="margin-left: 20px; font-size: 12px;">Methods: ${methods.join(
+              ", "
+            )}</div>`;
+          }
+        });
+        modulesDiv.innerHTML = html;
+
+        document.getElementById("console-logs").textContent =
+          logs.join("\n") || "No logs";
+      }, 1000);
+
+      // -----------------
+      // Import Handlers
+      // -----------------
+      function toBool(v) {
+        if (typeof v === "boolean") return v;
+        if (!v) return false;
+        const s = String(v).trim().toLowerCase();
+        return s === "true" || s === "1" || s === "yes" || s === "ja";
+      }
+
+      function mapRowToProduct(row, idx) {
+        // Required: name, price, image
+        const id = (
+          row.vendorSku ||
+          row.sku ||
+          row.id ||
+          "imp_" + Date.now() + "_" + idx
+        ).toString();
+        const price = parseFloat(row.price || row.basePrice || 0) || 0;
+        const discount = parseInt(row.discount || 0, 10) || 0;
+        const originalPrice = discount
+          ? +(price / (1 - discount / 100)).toFixed(2)
+          : price;
+        return {
+          id,
+          name: row.name || "Imported product",
+          description: row.description || "",
+          image:
+            row.image ||
+            row.img ||
+            "https://via.placeholder.com/600x400?text=Product",
+          price,
+          originalPrice,
+          discount,
+          type: row.type || "overig",
+          seller: row.seller || "Imported Vendor",
+          shipFrom: row.shipFrom || "CN",
+          freeShip: toBool(row.freeShip),
+          local: toBool(row.local),
+          rating: Math.max(3.8, Math.min(5, parseFloat(row.rating || 4.6))),
+          orders: parseInt(row.orders || 100 + Math.random() * 5000, 10),
+          createdAt:
+            Date.now() - Math.floor(Math.random() * 30 * 24 * 3600 * 1000),
+          images: row.images
+            ? Array.isArray(row.images)
+              ? row.images
+              : String(row.images).split(/\s*,\s*/)
+            : undefined,
+        };
+      }
+
+      function parseCSV(text) {
+        const lines = text.split(/\r?\n/).filter((l) => l.trim().length);
+        if (lines.length < 2) return [];
+        const headers = lines[0].split(",").map((h) => h.trim());
+        return lines.slice(1).map((line) => {
+          const cols = [];
+          let cur = "";
+          let inQ = false;
+          for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+              if (inQ && line[i + 1] === '"') {
+                cur += '"';
+                i++;
+              } else {
+                inQ = !inQ;
+              }
+            } else if (ch === "," && !inQ) {
+              cols.push(cur);
+              cur = "";
+            } else {
+              cur += ch;
+            }
+          }
+          cols.push(cur);
+          const obj = {};
+          headers.forEach((h, i) => (obj[h] = (cols[i] || "").trim()));
+          return obj;
+        });
+      }
+
+      function saveImported(products) {
+        const key = "importedProducts";
+        const prev = JSON.parse(localStorage.getItem(key) || "[]");
+        const merged = [...prev];
+        const existing = new Set(prev.map((p) => p.id));
+        products.forEach((p) => {
+          if (!existing.has(p.id)) merged.push(p);
+        });
+        localStorage.setItem(key, JSON.stringify(merged));
+        return merged.length - prev.length;
+      }
+
+      function logImport(msg) {
+        const el = document.getElementById("import-log");
+        el.textContent = (el.textContent + "\n" + msg).trim();
+      }
+
+      document.getElementById("file-csv").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const rows = parseCSV(reader.result);
+            const mapped = rows.map(mapRowToProduct);
+            const added = saveImported(mapped);
+            logImport(`CSV: ${mapped.length} records, ${added} toegevoegd`);
+          } catch (err) {
+            logImport("CSV fout: " + err.message);
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      document.getElementById("file-json").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            const arr = Array.isArray(data) ? data : data.items || [];
+            const mapped = arr.map(mapRowToProduct);
+            const added = saveImported(mapped);
+            logImport(`JSON: ${mapped.length} records, ${added} toegevoegd`);
+          } catch (err) {
+            logImport("JSON fout: " + err.message);
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      document.getElementById("btn-export").addEventListener("click", () => {
+        try {
+          const blob = new Blob([JSON.stringify(ALL || [], null, 2)], {
+            type: "application/json",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "products-export.json";
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          logImport("Export fout: " + e.message);
+        }
+      });
+
+      document.getElementById("btn-clear").addEventListener("click", () => {
+        localStorage.removeItem("importedProducts");
+        logImport("Geïmporteerde producten gewist.");
+      });
+    </script>
+  </body>
+</html>

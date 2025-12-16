@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoBuy — Deals & Discovery</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container">
+        <div class="left">
+          <select
+            id="lang-select"
+            style="
+              border: none;
+              background: transparent;
+              cursor: pointer;
+              font-size: 14px;
+              padding: 4px 8px;
+              border-radius: 4px;
+              transition: 0.2s;
+            "
+          >
+            <option>🇳🇱 NL</option>
+            <option>🇩🇪 DE</option>
+            <option>🇫🇷 FR</option>
+            <option>🇬🇧 EN</option>
+          </select>
+          <select
+            id="currency-select"
+            style="
+              border: none;
+              background: transparent;
+              cursor: pointer;
+              font-size: 14px;
+              padding: 4px 8px;
+              border-radius: 4px;
+              transition: 0.2s;
+            "
+          >
+            <option>EUR €</option>
+            <option>USD $</option>
+            <option>GBP £</option>
+          </select>
+        </div>
+        <div class="right" style="display: none">
+          <span>Buyer Protection</span>
+          <span>·</span>
+          <span>Gratis retourneren 30 dagen</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="header">
+      <div class="container header-inner">
+        <div class="brand">
+          <div class="logo">G</div>
+          <div class="name">GoBuy</div>
+        </div>
+        <div class="search">
+          <input id="search" placeholder="Zoek ontelbare deals…" />
+          <button id="search-btn">Zoek</button>
+        </div>
+        <div class="actions">
+          <button class="act" id="wishlist-btn">
+            ❤ <span class="badge">0</span>
+          </button>
+          <button class="act" id="profile-btn">👤</button>
+          <button class="act" id="cart-btn">
+            🛒 <span class="badge">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="container nav-inner">
+        <div class="cats">
+          <button class="cat" data-cat="all" class="active">Alles</button>
+          <button class="cat" data-cat="elektronica">Elektronica</button>
+          <button class="cat" data-cat="keuken">Keuken</button>
+          <button class="cat" data-cat="sportengezondheid">
+            Sport & Gezondheid
+          </button>
+          <button class="cat" data-cat="wonenenzo">Wonen</button>
+          <button class="cat" data-cat="mode">Mode</button>
+          <button class="cat" data-cat="speelgoed">Speelgoed</button>
+          <button class="cat" data-cat="beauty">Beauty</button>
+          <button class="cat" data-cat="tuin">Tuin</button>
+          <button class="cat" data-cat="automotor">Auto & Motor</button>
+          <button class="cat" data-cat="babykind">Baby & Kind</button>
+        </div>
+        <div class="promo">
+          Gratis verzending op geselecteerde items · 30-dagen retour
+        </div>
+      </div>
+    </nav>
+
+    <main class="container main">
+      <section class="hero">
+        <div class="hero-left">
+          <h1>Dagdeal: gigantische kortingen</h1>
+          <p>Profiteer van EUR-only prijzen en snelle verzending</p>
+          <div class="hero-deals" id="hero-deals"></div>
+        </div>
+        <aside class="hero-side">
+          <div class="banner" id="banner-1"></div>
+          <div class="banner" id="banner-2"></div>
+        </aside>
+      </section>
+
+      <div
+        id="breadcrumbs"
+        style="padding: 12px 0; font-size: 13px; color: var(--muted)"
+      ></div>
+
+      <section class="toolbar">
+        <div class="sort">
+          <label>Sorteren</label>
+          <select id="sort">
+            <option value="smart">Slim</option>
+            <option value="price-asc">Prijs ↑</option>
+            <option value="price-desc">Prijs ↓</option>
+            <option value="popular">Populair</option>
+            <option value="new">Nieuw</option>
+          </select>
+        </div>
+        <div class="page-size">
+          <label>Per pagina</label>
+          <select id="page-size">
+            <option value="15" selected>15</option>
+            <option value="30">30</option>
+            <option value="60">60</option>
+          </select>
+        </div>
+        <div class="toggles">
+          <label
+            ><input type="checkbox" id="flt-free" /> Gratis verzending</label
+          >
+          <label><input type="checkbox" id="flt-local" /> Lokaal</label>
+        </div>
+        <div class="price-filter">
+          <label
+            >Prijs: €<span id="price-min">0</span> - €<span id="price-max"
+              >500</span
+            ></label
+          >
+          <input
+            type="range"
+            id="price-slider-min"
+            min="0"
+            max="500"
+            value="0"
+            step="5"
+          />
+          <input
+            type="range"
+            id="price-slider-max"
+            min="0"
+            max="500"
+            value="500"
+            step="5"
+          />
+        </div>
+        <div class="brand-filter">
+          <label>Merk</label>
+          <select id="brand-select" multiple size="1">
+            <option value="">Alle merken</option>
+          </select>
+        </div>
+        <div class="rating-filter">
+          <label>Min. rating</label>
+          <select id="rating-select">
+            <option value="0">Alle</option>
+            <option value="3">★★★ 3+</option>
+            <option value="4">★★★★ 4+</option>
+            <option value="4.5">★★★★★ 4.5+</option>
+          </select>
+        </div>
+        <button class="btn" id="compare-btn" style="margin-left: auto">
+          🔍 Vergelijk (<span id="compare-count">0</span>)
+        </button>
+      </section>
+
+      <section class="grid" id="grid"></section>
+
+      <div id="recently-viewed" style="display: none"></div>
+      <div id="best-sellers"></div>
+
+      <div class="pagination">
+        <button class="first">«</button>
+        <button class="prev">←</button>
+        <span class="info">Pagina 1/1</span>
+        <div class="numbers"></div>
+        <button class="next">→</button>
+        <button class="last">»</button>
+      </div>
+    </main>
+
+    <div id="toast" aria-live="polite"></div>
+
+    <div id="product-modal" class="modal hidden"></div>
+
+    <!-- Scripts in dependency order -->
+    <script src="js/products-utils.js"></script>
+    <script src="js/products-electronics.js"></script>
+    <script src="js/products-kitchen.js"></script>
+    <script src="js/products-sports.js"></script>
+    <script src="js/products-home.js"></script>
+    <script src="js/products-fashion.js"></script>
+    <script src="js/products-toys.js"></script>
+    <script src="js/products-beauty.js"></script>
+    <script src="js/products-garden.js"></script>
+    <script src="js/products-automotive.js"></script>
+    <script src="js/products-baby.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/language.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/checkout.js"></script>
+    <script src="js/modals.js"></script>
+    <script src="js/compare.js"></script>
+    <script src="js/reviews.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/orders.js"></script>
+    <script src="js/addressbook.js"></script>
+    <script src="js/events.js"></script>
+  </body>
+</html>

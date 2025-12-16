@@ -297,8 +297,8 @@ function formatPrice(priceInEur) {
   return `${symbol}${converted}`;
 }
 
-function applyLanguageAndCurrency() {
-  // Update all text elements with translations
+async function applyLanguageAndCurrency() {
+  // Update static text elements
   document
     .querySelectorAll("label, button:not([onclick]), h1, h2, h3, h4, span")
     .forEach((el) => {
@@ -308,12 +308,43 @@ function applyLanguageAndCurrency() {
       }
     });
 
-  // Re-render grid to update prices
+  // Translate product descriptions (keep titles) and re-render
+  if (currentLanguage !== "nl" && typeof translateProducts === "function") {
+    try {
+      const translatedAll = await translateProducts(ALL, currentLanguage);
+      ALL = translatedAll;
+      VIEW = [...translatedAll];
+    } catch (e) {
+      console.warn("Product translation failed", e);
+    }
+  }
+
+  renderAll();
+
+  // Translate remaining page text nodes (excluding product titles)
+  if (typeof translatePageText === "function") {
+    translatePageText(currentLanguage).catch((e) =>
+      console.warn("Page translation failed", e)
+    );
+  }
+}
+
+function renderAll() {
+  // Re-render everything to update prices and translated content
   if (typeof renderGrid === "function") {
     renderGrid();
   }
   if (typeof renderHeroDeals === "function") {
     renderHeroDeals();
+  }
+  if (typeof renderBanners === "function") {
+    renderBanners();
+  }
+  if (typeof renderBestSellers === "function") {
+    renderBestSellers();
+  }
+  if (typeof renderRecentlyViewed === "function") {
+    renderRecentlyViewed();
   }
 }
 

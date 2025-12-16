@@ -1,6 +1,58 @@
 /* Checkout Flow */
 
-function openCheckout() {
+function addressKeySuffix() {
+  return currentUser?.email ? `:${currentUser.email}` : "";
+}
+
+function loadSavedAddress() {
+  const suffix = addressKeySuffix();
+  const get = (base) =>
+    localStorage.getItem(`${base}${suffix}`) ||
+    localStorage.getItem(base) ||
+    "";
+  return {
+    address: get("userAddress"),
+    city: get("userCity"),
+    zip: get("userZip"),
+  };
+}
+
+function saveDefaultAddress(address, city, zip) {
+  const suffix = addressKeySuffix();
+  const setKey = (base, val) => {
+    localStorage.setItem(`${base}${suffix}`, val || "");
+    localStorage.setItem(base, val || "");
+  };
+  setKey("userAddress", address);
+  setKey("userCity", city);
+  setKey("userZip", zip);
+}
+
+async function getDefaultAddressOnline() {
+  if (!window.supabaseClient || !currentUser?.id) return null;
+  try {
+    // Prefer explicit default; else first address
+    const { data: def, error: errDef } = await window.supabaseClient
+      .from("addresses")
+      .select("name,address,city,zip,is_default")
+      .eq("user_id", currentUser.id)
+      .eq("is_default", true)
+      .limit(1);
+    if (!errDef && Array.isArray(def) && def[0]) return def[0];
+    const { data: first, error: errFirst } = await window.supabaseClient
+      .from("addresses")
+      .select("name,address,city,zip,is_default")
+      .eq("user_id", currentUser.id)
+      .order("created_at", { ascending: true })
+      .limit(1);
+    if (!errFirst && Array.isArray(first) && first[0]) return first[0];
+  } catch (e) {
+    console.warn("[checkout] fetch default address failed:", e.message);
+  }
+  return null;
+}
+
+async function openCheckout() {
   console.log("openCheckout called");
 
   const selectedItems = CART.filter((p) => p.selected !== false);
@@ -38,9 +90,13 @@ function openCheckout() {
   const name = currentUser?.name || "";
   const email = currentUser?.email || "";
   const phone = "";
-  const address = localStorage.getItem("userAddress") || "";
-  const city = localStorage.getItem("userCity") || "";
-  const zip = localStorage.getItem("userZip") || "";
+  let { address, city, zip } = loadSavedAddress();
+  const onlineDefault = await getDefaultAddressOnline();
+  if (onlineDefault) {
+    address = onlineDefault.address || address;
+    city = onlineDefault.city || city;
+    zip = onlineDefault.zip || zip;
+  }
 
   modal.innerHTML = `
     <div class="content" style="max-width:700px">
@@ -198,7 +254,7 @@ function openCheckout() {
     const differentCheckbox = document.getElementById("checkout-different");
     const billingSection = document.getElementById("billing-address-section");
     const countrySelect = document.getElementById("checkout-country");
-    
+
     // Store subtotal for event listeners
     const orderSubtotal = subtotal;
 
@@ -386,9 +442,11 @@ function processOrder() {
   };
 
   // Save user address for next time
-  localStorage.setItem("userAddress", order.customer.address);
-  localStorage.setItem("userCity", order.customer.city);
-  localStorage.setItem("userZip", order.customer.zip);
+  saveDefaultAddress(
+    order.customer.address,
+    order.customer.city,
+    order.customer.zip
+  );
 
   ORDERS.push(order);
   localStorage.setItem("orders", JSON.stringify(ORDERS));
@@ -398,6 +456,13 @@ function processOrder() {
   CART = CART.filter((item) => !selectedIds.includes(item.id));
   localStorage.setItem("cart", JSON.stringify(CART));
   updateBadges();
+
+  // Send confirmation email (async, don't block UI)
+  fetch("/api/emails/send-confirmation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ order }),
+  }).catch((e) => console.warn("Email send failed (non-critical):", e));
 
   showOrderConfirmation(order);
 }

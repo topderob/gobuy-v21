@@ -4,9 +4,32 @@ let currentUser = null;
 
 // Initialize user from localStorage
 document.addEventListener("DOMContentLoaded", () => {
+  // If Supabase session exists, prefer it
+  if (window.supabaseClient) {
+    window.supabaseClient.auth
+      .getSession()
+      .then(({ data }) => {
+        const user = data?.session?.user;
+        if (user) {
+          currentUser = getProfileFromSupabaseUser(user);
+          localStorage.setItem("currentUser", JSON.stringify(currentUser));
+          updateAuthUI();
+        }
+      })
+      .catch(() => {});
+  }
   const saved = localStorage.getItem("currentUser");
   if (saved) {
-    currentUser = JSON.parse(saved);
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.email && parsed.name) {
+        currentUser = parsed;
+      } else {
+        localStorage.removeItem("currentUser");
+      }
+    } catch (_) {
+      localStorage.removeItem("currentUser");
+    }
     updateAuthUI();
   }
 });
@@ -52,27 +75,62 @@ function openLogin() {
 }
 
 function processLogin() {
-  const email = document.getElementById("login-email")?.value;
-  const password = document.getElementById("login-password")?.value;
+  const email = (document.getElementById("login-email")?.value || "")
+    .trim()
+    .toLowerCase();
+  const password = (
+    document.getElementById("login-password")?.value || ""
+  ).trim();
 
-  // Get registered users
-  const users = JSON.parse(localStorage.getItem("users") || "[]");
-  const user = users.find((u) => u.email === email && u.password === password);
-
-  if (user) {
-    currentUser = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      joinDate: user.joinDate,
-    };
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
-    updateAuthUI();
-    closeModal();
-    showToast("Welkom terug", `${currentUser.name}! 👋`, "success");
-  } else {
-    showToast("Login mislukt", "Onjuiste inloggegevens", "error");
+  if (!email || !password) {
+    showToast("Login mislukt", "Vul e-mail en wachtwoord in", "error");
+    return;
   }
+  if (window.supabaseClient) {
+    window.supabaseClient.auth
+      .signInWithPassword({ email, password })
+      .then(({ data, error }) => {
+        if (error) {
+          showToast(
+            "Login mislukt",
+            error.message || "Onjuiste gegevens",
+            "error"
+          );
+          return;
+        }
+        const user = data?.user;
+        if (user) {
+          currentUser = getProfileFromSupabaseUser(user);
+          localStorage.setItem("currentUser", JSON.stringify(currentUser));
+          updateAuthUI();
+          closeModal();
+          showToast("Welkom terug", `${currentUser.name}! 👋`, "success");
+          return;
+        }
+        showToast("Login mislukt", "Geen gebruiker gevonden", "error");
+      })
+      .catch((e) => {
+        showToast("Login mislukt", e.message || "Fout bij inloggen", "error");
+      });
+    return;
+  }
+  // Fallback to local (offline dev)
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+  const user = users.find(
+    (u) => (u.email || "").toLowerCase() === email && u.password === password
+  );
+  if (!user)
+    return showToast("Login mislukt", "Onjuiste inloggegevens", "error");
+  currentUser = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    joinDate: user.joinDate,
+  };
+  localStorage.setItem("currentUser", JSON.stringify(currentUser));
+  updateAuthUI();
+  closeModal();
+  showToast("Welkom terug", `${currentUser.name}! 👋`, "success");
 }
 
 function openRegister() {
@@ -124,10 +182,21 @@ function openRegister() {
 }
 
 function processRegister() {
-  const name = document.getElementById("register-name")?.value;
-  const email = document.getElementById("register-email")?.value;
-  const password = document.getElementById("register-password")?.value;
-  const confirm = document.getElementById("register-confirm")?.value;
+  const name = (document.getElementById("register-name")?.value || "").trim();
+  const email = (document.getElementById("register-email")?.value || "")
+    .trim()
+    .toLowerCase();
+  const password = (
+    document.getElementById("register-password")?.value || ""
+  ).trim();
+  const confirm = (
+    document.getElementById("register-confirm")?.value || ""
+  ).trim();
+
+  if (!name || !email || !password || !confirm) {
+    showToast("Registratie mislukt", "Vul alle velden in", "error");
+    return;
+  }
 
   if (password !== confirm) {
     showToast(
@@ -138,13 +207,58 @@ function processRegister() {
     return;
   }
 
-  const users = JSON.parse(localStorage.getItem("users") || "[]");
-
-  if (users.find((u) => u.email === email)) {
-    showToast("Registratie mislukt", "E-mailadres al in gebruik", "error");
+  if (window.supabaseClient) {
+    window.supabaseClient.auth
+      .signUp({
+        email,
+        password,
+        options: { data: { name } },
+      })
+      .then(({ data, error }) => {
+        if (error) {
+          showToast(
+            "Registratie mislukt",
+            error.message || "Fout bij registreren",
+            "error"
+          );
+          return;
+        }
+        const user = data?.user;
+        if (!user) {
+          showToast(
+            "Registratie mislukt",
+            "Geen gebruiker teruggekregen",
+            "error"
+          );
+          return;
+        }
+        currentUser = getProfileFromSupabaseUser(user);
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        updateAuthUI();
+        closeModal();
+        const needsConfirm = user?.confirmation_sent_at;
+        showToast(
+          needsConfirm ? "Bevestig je e-mail" : "Account aangemaakt",
+          needsConfirm
+            ? "Check je mailbox om te bevestigen"
+            : `Welkom ${name}! 🎉`,
+          needsConfirm ? "info" : "success"
+        );
+      })
+      .catch((e) => {
+        showToast("Registratie mislukt", e.message || "Fout", "error");
+      });
     return;
   }
-
+  // Fallback local registration
+  const users = JSON.parse(localStorage.getItem("users") || "[]");
+  if (users.find((u) => (u.email || "").toLowerCase() === email)) {
+    return showToast(
+      "Registratie mislukt",
+      "E-mailadres al in gebruik",
+      "error"
+    );
+  }
   const newUser = {
     id: Date.now(),
     name,
@@ -152,10 +266,8 @@ function processRegister() {
     password,
     joinDate: new Date().toISOString(),
   };
-
   users.push(newUser);
   localStorage.setItem("users", JSON.stringify(users));
-
   currentUser = {
     id: newUser.id,
     name: newUser.name,
@@ -163,7 +275,6 @@ function processRegister() {
     joinDate: newUser.joinDate,
   };
   localStorage.setItem("currentUser", JSON.stringify(currentUser));
-
   updateAuthUI();
   closeModal();
   showToast("Account aangemaakt", `Welkom ${name}! 🎉`, "success");
@@ -250,6 +361,9 @@ function openProfile() {
 function logout() {
   currentUser = null;
   localStorage.removeItem("currentUser");
+  if (window.supabaseClient) {
+    window.supabaseClient.auth.signOut().catch(() => {});
+  }
   updateAuthUI();
   closeModal();
   showToast("Uitgelogd", "Tot ziens!", "info");
@@ -260,10 +374,13 @@ function updateAuthUI() {
   if (!profileBtn) return;
 
   if (currentUser) {
+    const initial = currentUser.name
+      ? currentUser.name.charAt(0).toUpperCase()
+      : "👤";
     profileBtn.innerHTML = `
       <div style="display:flex;align-items:center;gap:6px">
         <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, var(--accent), var(--primary));display:flex;align-items:center;justify-content:center;font-size:14px;color:white;font-weight:600">
-          ${currentUser.name.charAt(0).toUpperCase()}
+          ${initial}
         </div>
       </div>
     `;

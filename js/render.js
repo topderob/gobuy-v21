@@ -8,15 +8,14 @@ function renderHeroDeals() {
     .slice(0, 8);
   wrap.innerHTML = "";
   picks.forEach((p) => {
-    const price = formatPrice(p.price * 1.21);
-    const original = p.discount ? formatPrice(p.originalPrice * 1.21) : "";
+    const price = formatPrice(p.price);
+    const original = p.discount ? formatPrice(p.originalPrice) : "";
     const el = document.createElement("div");
     el.className = "deal";
     el.style.cursor = "pointer";
     el.innerHTML = `
-      <img src="${p.image}" alt="${
-      p.name
-    }" loading="lazy" onerror="this.src='https://via.placeholder.com/400x300/f3f3f3/666666?text=Deal'">
+      <img src="${p.image}" alt="${p.name}" loading="lazy" />
+      <div class="quick-add" title="Direct in winkelwagen"></div>
       <div class="body">
         <div class="title">${p.name}</div>
         <div class="price">${price} ${
@@ -24,6 +23,16 @@ function renderHeroDeals() {
     }</div>
       </div>`;
     el.addEventListener("click", () => openProductModal(p));
+
+    // Add quick-add button click handler
+    const quickAddBtn = el.querySelector(".quick-add");
+    if (quickAddBtn) {
+      quickAddBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        addToCart(p);
+      });
+    }
+
     wrap.appendChild(el);
   });
 }
@@ -45,25 +54,27 @@ function renderGrid() {
 function card(p) {
   const el = document.createElement("div");
   el.className = "card";
-  const price = formatPrice(p.price * 1.21);
-  const original = p.discount ? formatPrice(p.originalPrice * 1.21) : "";
+  const price = formatPrice((p.price || 0) * 1.21);
+  const original = p.discount ? formatPrice((p.originalPrice || 0) * 1.21) : "";
+  const rating = p.rating || 0;
   const stars =
-    "★".repeat(Math.round(p.rating)) + "☆".repeat(5 - Math.round(p.rating));
+    "★".repeat(Math.round(rating)) + "☆".repeat(5 - Math.round(rating));
   const isWished = WISHLIST.some((w) => w.id === p.id);
   const isCompared = COMPARE.some((c) => c.id === p.id);
 
   // Track recently viewed
   trackRecentlyViewed(p);
   el.innerHTML = `
-    <img class="thumb" src="${p.image}" alt="${
-    p.name
-  }" loading="lazy" onerror="this.src='https://via.placeholder.com/400x400/f3f3f3/666666?text=No+Image'" />
+    <img class="thumb" src="${
+      p.image ||
+      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e5e5" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="16"%3ENo Image%3C/text%3E%3C/svg%3E'
+    }" alt="${p.name}" loading="lazy" />
     <div class="body">
-      <div class="title">${p.name}</div>
+      <div class="title">${p.name || "Product"}</div>
       <div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px">
         <span style="font-size:16px;color:#ffc107">${stars}</span>
-        <span style="color:#666;font-weight:600">${p.rating.toFixed(1)}</span>
-        <span style="color:#999">(${p.orders})</span>
+        <span style="color:#666;font-weight:600">${rating.toFixed(1)}</span>
+        <span style="color:#999">(${p.orders || 0})</span>
       </div>
       <div><span class="price">${price}</span> ${
     original ? `<small>${original}</small>` : ""
@@ -204,20 +215,24 @@ function renderRecentlyViewed() {
     .filter((p) => p);
 
   let html = `
-    <div style="margin: 40px 0; padding: 20px; background: #f5f5f5; border-radius: 12px;">
+    <div style="margin: 40px 0; padding: 20px; background: var(--card); border-radius: 12px; border: 1px solid var(--border);">
       <h2 style="margin: 0 0 20px 0">👀 Onlangs Bekeken</h2>
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">
   `;
 
   products.slice(0, 6).forEach((p) => {
-    const price = formatPrice(p.price * 1.21);
+    const price = formatPrice((p.price || 0) * 1.21);
+    const imgSrc =
+      p.image ||
+      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e5e5" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em" font-family="sans-serif" font-size="16"%3ENo Image%3C/text%3E%3C/svg%3E';
     html += `
-      <div style="background: white; padding: 12px; border-radius: 8px; cursor: pointer; text-align: center;" onclick="openProductModal(ALL.find(x => x.id === ${
+      <div style="background: var(--card); border: 1px solid var(--border); padding: 12px; border-radius: 8px; cursor: pointer; text-align: center; position: relative;" onclick="openProductModal(ALL.find(x => x.id === '${
         p.id
-      }))">
-        <img src="${
-          p.image
-        }" style="width: 100%; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 8px;" />
+      }'))">
+        <img src="${imgSrc}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; background: var(--bg);" />
+        <div class="quick-add" title="Direct in winkelwagen" style="position: absolute; bottom: 12px; right: 12px; width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transition: transform 0.2s;" onclick="event.stopPropagation(); addToCart(ALL.find(x => x.id === '${
+          p.id
+        }'))">+</div>
         <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">${p.name.substring(
           0,
           20
@@ -247,9 +262,9 @@ function renderBestSellers() {
   bestsellers.forEach((p) => {
     const price = formatPrice(p.price * 1.21);
     html += `
-      <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; cursor: pointer;" onclick="openProductModal(ALL.find(x => x.id === ${
+      <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; cursor: pointer;" onclick="openProductModal(ALL.find(x => x.id === '${
         p.id
-      }))">
+      }'))">
         <div style="font-weight: 600; font-size: 14px; margin-bottom: 6px">${p.name.substring(
           0,
           30

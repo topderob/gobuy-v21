@@ -3,6 +3,11 @@
 function openProductModal(p) {
   const modal = document.getElementById("product-modal");
   if (!modal) return;
+
+  // Lower chatbot z-index when modal opens
+  const chatWidget = document.querySelector(".chat-widget");
+  if (chatWidget) chatWidget.style.zIndex = "9998";
+
   const price = formatPrice(p.price * 1.21);
   const original = p.discount ? formatPrice(p.originalPrice * 1.21) : "";
   const stars =
@@ -19,7 +24,9 @@ function openProductModal(p) {
     ? `
     <div class="product-gallery" style="width:100%;height:auto;">
       <div class="gallery-main" style="height:300px;">
-        <img src="${p.images[0]}" id="gallery-main-img" loading="lazy" style="width:100%;height:100%;object-fit:contain;" />
+        <img src="${
+          p.images[0]
+        }" id="gallery-main-img" loading="lazy" style="width:100%;height:100%;object-fit:contain;" />
         <button class="gallery-nav prev" onclick="prevImage()">‹</button>
         <button class="gallery-nav next" onclick="nextImage()">›</button>
         <div class="gallery-indicator">
@@ -39,7 +46,9 @@ function openProductModal(p) {
             (img, i) => `
           <div class="gallery-thumb ${
             i === 0 ? "active" : ""
-          }" onclick="goToImage(${i})" style="flex-shrink:0;width:60px;height:60px;border:2px solid ${i === 0 ? 'var(--primary)' : 'var(--border)'};border-radius:4px;overflow:hidden;cursor:pointer;">
+          }" onclick="goToImage(${i})" style="flex-shrink:0;width:60px;height:60px;border:2px solid ${
+              i === 0 ? "var(--primary)" : "var(--border)"
+            };border-radius:4px;overflow:hidden;cursor:pointer;">
             <img src="${img}" style="width:100%;height:100%;object-fit:contain;" />
           </div>
         `
@@ -94,6 +103,12 @@ function openProductModal(p) {
             <p style="line-height:1.5;color:var(--text);font-size:14px;margin-bottom:16px">${
               p.description
             }</p>
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+              <label style="font-weight:600;color:var(--text)">Aantal:</label>
+              <button onclick="decreaseModalQty()" style="width:32px;height:32px;border:1px solid var(--border);background:var(--bg);border-radius:4px;cursor:pointer;font-weight:600">−</button>
+              <input type="number" id="modal-qty" value="1" min="1" max="999" style="width:50px;text-align:center;border:1px solid var(--border);padding:6px;border-radius:4px;font-weight:600" onchange="setModalQty(this.value)" />
+              <button onclick="increaseModalQty()" style="width:32px;height:32px;border:1px solid var(--border);background:var(--bg);border-radius:4px;cursor:pointer;font-weight:600">+</button>
+            </div>
             <div style="display:flex;gap:12px">
               <button class="btn primary" onclick="addToCartFromModal('${
                 p.id
@@ -127,7 +142,10 @@ function openProductModal(p) {
           <div id="content-details" class="tab-content" style="display:block">
             <h4 style="margin-bottom:12px">Product specificaties</h4>
             <ul style="padding-left:20px;color:var(--text);line-height:2">
-              ${p.features.map((f) => `<li>${f}</li>`).join("")}
+              ${
+                (p.features || []).map((f) => `<li>${f}</li>`).join("") ||
+                "<li>Geen specificaties beschikbaar</li>"
+              }
             </ul>
           </div>
           
@@ -202,7 +220,7 @@ function openProductModal(p) {
                 }'))" style="cursor:pointer;border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:center;transition:all 0.2s" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
                   <img src="${
                     r.image
-                  }" style="width:60px;height:60px;object-fit:cover;border-radius:6px" loading="lazy" onerror="this.src='https://via.placeholder.com/60x60/f3f3f3/666?text=?'" />
+                  }" style="width:60px;height:60px;object-fit:cover;border-radius:6px" loading="lazy" />
                   <div style="flex:1">
                     <div style="font-weight:600;font-size:13px;margin-bottom:4px">${r.name.substring(
                       0,
@@ -230,7 +248,7 @@ function openProductModal(p) {
   if (hasGallery) {
     setTimeout(() => {
       initGallery(p);
-      console.log('Gallery initialized for product:', p.name);
+      console.log("Gallery initialized for product:", p.name);
     }, 50);
   }
 }
@@ -261,6 +279,10 @@ function switchProductTab(tab, productId) {
 
 function closeModal() {
   document.getElementById("product-modal")?.classList.add("hidden");
+
+  // Restore chatbot z-index when modal closes
+  const chatWidget = document.querySelector(".chat-widget");
+  if (chatWidget) chatWidget.style.zIndex = "9999";
 }
 
 function generateReviews(p) {
@@ -333,4 +355,32 @@ function goToImage(index) {
   if (!currentProduct || !currentProduct.images) return;
   currentImageIndex = index;
   updateGalleryImage();
+}
+
+function decreaseModalQty() {
+  const input = document.getElementById("modal-qty");
+  if (input) {
+    let val = parseInt(input.value, 10) || 1;
+    val = Math.max(1, val - 1);
+    input.value = val;
+    modalProductQty = val;
+  }
+}
+
+function increaseModalQty() {
+  const input = document.getElementById("modal-qty");
+  if (input) {
+    let val = parseInt(input.value, 10) || 1;
+    val = Math.min(999, val + 1);
+    input.value = val;
+    modalProductQty = val;
+  }
+}
+
+function setModalQty(val) {
+  let num = parseInt(val, 10) || 1;
+  num = Math.max(1, Math.min(999, num));
+  modalProductQty = num;
+  const input = document.getElementById("modal-qty");
+  if (input) input.value = num;
 }

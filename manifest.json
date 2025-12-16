@@ -1,0 +1,42 @@
+{
+  "name": "GoBuy - Deals & Discovery",
+  "short_name": "GoBuy",
+  "description": "De beste online winkel voor topdeals en producten",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff6a00",
+  "orientation": "portrait-primary",
+  "icons": [],
+  "categories": ["shopping", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Dagdeals",
+      "short_name": "Deals",
+      "description": "Bekijk de beste dagdeals",
+      "url": "/?view=deals",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Winkelwagen",
+      "short_name": "Cart",
+      "description": "Open je winkelwagen",
+      "url": "/?view=cart",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}
